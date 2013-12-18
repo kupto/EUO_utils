@@ -1,0 +1,5 @@
+;Act
+ wait 10
+ set #lobjectid %1
+ event macro 17
+exit

@@ -1,0 +1,17 @@
+;drop all %1 what, %2 where
+ if %2 = N/A
+  set %2 BWGEKMD
+ if %1 = N/A
+  set %1 *
+ finditem %1 C_ , #backpackid
+ while #findkind <> -1
+ {
+  finditem %1 C_ , #backpackid
+  exevent drag #findid #findstack
+  wait 20
+      
+  exevent dropc %2
+  wait 10
+      
+ }
+exit

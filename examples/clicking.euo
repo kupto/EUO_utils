@@ -1,0 +1,19 @@
+;Example usage of do.euo and twoandone.euo, these scripts are
+;shorthand for some laboursome clicking in the game.
+ set %scissorstype KAG ;Type of scissors, you should have a pair in backpack
+
+ ;Open a backpack by clicking on it (double-click an item)
+ call do.euo #backpackid
+ 
+ wait 10 ;wait for the backpack to fully load
+ 
+ ;find something to cut your hair with
+ finditem %scissorstype C_ , #backpackid
+ if #findkind = -1
+   halt
+   
+ ;double-click on scissors and target yourself, haircut
+ ;dialog should appear (double-click an item and target
+ ;another)
+ call twoandone.euo #findid #charid
+halt

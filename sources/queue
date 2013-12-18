@@ -1,0 +1,216 @@
+goto skipmanual
+;queue.euo - similair to queue container in C++, where the datatype, that is
+;held, is single variable. Each stack resides in separate namespace.
+
+;parameters:
+;%1 - name of the queue (underlying namesapce), if the name starts with
+;     "g_", the queue will be global (common to all scripts in current EUO
+;     instance).
+;%2 - command to do, defaultly the return variable will be #result.
+;   clear - makes the queue empty.
+;   swap - swaps two elements within the queue.
+;   size - returns the number of elements inside the queue.
+;   push - push the %3 variable to the back of the queue.
+;   pop - remove and return variable from the front of the queue.
+;   front - show front element of the stack.
+;   back - show back element of the stack.
+;   get - get value of an item on specified index. (1 is front element)
+;   set - set value on specified index in the stack. Could be used to merely extend the stack (with only three parameters)
+;   copy - copy specified stack into another stack
+;%3 - if the push is issued, this is the value to be stored.
+;   - if pop, front, back, size is issued, this is the name of the return
+;     variable that will be set (% . %3 instead of #result).
+;   - if swap is issued, this is an index of first element to be swapped.
+;   - if get, set is issued, this is an index of element to be returned.
+;   - if copy is issued, this is name of the new queue to be initialized to
+;     same values as is the current one
+;%4 - if swap is issued, this is an index of the second element to swap
+;   - if get is issued, this is the name of the return variable that will
+;     be set.
+;   - if the set is issued, this is the value to be stored.
+
+;in the case of error (outside of bound operation for example) returns n/a
+;and no operations will be performed
+
+;inner namespace variables:
+;!back - index of element in the back of the queue (last in)
+;!front - index of element in frontof the queue (first out)
+;!item# - value of item on specified index
+;!indexhlp - used when calculating indexes
+;!swaphlp - help variable used while item swapping
+;!lpc - holder for the last lpc value
+
+skipmanual:
+namespace Push ;saves current namespace
+if %0 > 1
+{
+ str pos %1 g_ ;consider doing this via two script files...
+ if #strres = 1
+  namespace global %1
+ else
+  namespace local %1
+ set !lpc #lpc
+ set #lpc 1000000
+ if %2 = clear
+ {
+  namespace clear
+  goto finished
+ }
+ if !front = n/a || !back = n/a
+ { ;stack is empty, !front > !back
+  set !front 1
+  set !back 0
+ }
+ if %2 = size
+ {
+  if %0 > 2
+   set % . %3 !back - !front + 1
+  else
+   set #result !back - !front + 1
+  goto finished
+ }
+ if %2 = push
+ {
+  set !back !back + 1
+  if %0 = 3
+   set !item . !back %3
+  else
+   event sysmessage queue - push must have 3 input parameters
+  goto finished
+ }
+ if %2 = get
+ {
+  if %0 > 2
+  {
+   set %3 %3 + !front - 1
+   if %3 > !back || %3 < !front
+   {
+    event sysmessage queue - get index out of bounds
+    set %3 _ ;return n/a
+   }
+   if %0 > 3
+    set % . %4 !item . %3
+   else
+    set #result !item . %3
+  }
+  else
+   event sysmessage queue - get needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = set
+ {
+  if %0 > 2
+  {
+   set %3 %3 + !front - 1
+   if  %3 < !front
+    event sysmessage queue - set index out of bounds or queue is empty, nothing changed
+   else
+   {
+    if %3 > !back
+    {
+     set !back %3
+     event sysmessage queue - set index out of bounds, queue has been extended
+    }
+    if %0 = 4
+     set !item . %3 %4
+    ;else nothing has been set, probably only enlarged
+   }
+  }
+  else
+   event sysmessage queue - set needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = pop
+ {
+  if !front > !back ;stack is empty
+   event sysmessage queue - attempting to pop empty stack
+  else
+  {
+   if %0 > 2
+    set % . %3 !item . !front
+   else
+    set #result !item . !front
+   set !front !front + 1
+  }
+  if !front > !back ;stack is empty
+   namespace clear
+  goto finished
+ }
+ if %2 = back
+ {
+  if %0 > 2
+   set % . %3 !item . !back
+  else
+   set #result !item . !back
+  goto finished
+ }
+ if %2 = front
+ {
+  if %0 > 2
+   set % . %3 !item . !front
+  else
+   set #result !item . !front
+  goto finished
+ }
+ if %2 = swap
+ {
+  if %0 = 4
+  {
+   set %3 %3 + !front - 1
+   set %4 %4 + !front - 1
+   gosub Swap %3 %4
+  }
+  else
+   event sysmessage queue - swap needs 4 input parameters
+  goto finished
+ }
+ if %2 = copy
+ {
+  if %0 = 3
+  {
+   str pos %3 g_
+   if #strres = 1
+    namespace copy * to global %3
+   else
+    namespace copy * to local %3
+  }
+  else
+   event sysmessage queue - copy must have 3 parameters
+  goto finished
+ }
+ event sysmessage queue - unresolved command
+}
+event sysmessage queue - to few input parameters specified
+event sysmessage clear - makes the queue empty.
+event sysmessage swap - swaps two elements within the queue.
+event sysmessage size - returns the number of elements inside the queue.
+event sysmessage push - push the %3 variable to the back of the queue.
+event sysmessage pop - remove and return variable from the front of the queue.
+event sysmessage front - show front element of the stack.
+event sysmessage back - show back element of the stack.
+event sysmessage get - get value of an item on specified index. (1 is front element)
+event sysmessage set - set value on specified index in the stack. Could be used to merely extend the stack (with only three parameters)
+event sysmessage copy - copy specified queue into another stack
+
+finished:
+
+set #lpc !lpc
+namespace Pop ;retrieves previous namespace
+exit
+
+sub Swap ;%1 - first index, %2 - second index
+ set !swaphlp !item . %1
+ set !item . %1 !item . %2
+ set !item . %2 !swaphlp
+ if %1 > !items
+ {
+  event sysmessage queue - swap first index out of bouds, stack has been extended and filled with n/a values to accomodate
+  set !items %1
+ }
+ if %2 > !items
+ {
+  event sysmessage queue - swap first index out of bouds, stack has been extended and filled with n/a values to accomodate
+  set !items %2
+ }
+return
+

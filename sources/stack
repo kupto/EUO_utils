@@ -1,0 +1,188 @@
+goto skipmanual
+;stack.euo - similair to stack in C++, where the datatype, that is held, is
+;single variable. Each stack resides in separate namespace.
+
+;parameters:
+;%1 - name of the stack (underlying namesapce), if the name starts with
+;     "g_", the stack will be global (common to all scripts in current EUO
+;     instance).
+;%2 - command to do, defaultly the return variable will be #result.
+;   clear - makes the stack be empty.
+;   swap - swaps two elements within the stack.
+;   size - returns the number of elements inside the stack.
+;   push - push the %3 variable on top of the stack.
+;   pop - remove and return the top variable from the stack.
+;   top - show the variable that is on top of the stack.
+;   get - get value of an item on specified index. (1 is bottom element)
+;   set - set value on specified index in the stack. Could be used to merely extend the stack (with only three parameters)
+;   copy - copy specified stack into another stack
+;%3 - if the push is issued, this is the value to be stored.
+;   - if pop, top, size is issued, this is the name of the return variable
+;     that will be set (% . %3 instead of #result).
+;   - if swap is issued, this is an index of first element to be swapped.
+;   - if get, set is issued, this is an index of element to be returned.
+;   - if copy is issued, this is name of the new stack to be initialized to
+;     same values as is the current one
+;%4 - if swap is issued, this is an index of the second element to swap
+;   - if get is issued, this is the name of the return variable that will
+;     be set.
+;   - if the set is issued, this is the value to be stored.
+
+;in the case of error (outside of bound operation for example) returns n/a
+;and no operations will be performed or the stack is expanded
+
+;inner namespace variables:
+;!items - number of elements (size) and index of the top element
+;!item# - value of item on specified index
+;!swaphlp - help variable used while item swapping
+;!lpc - holder for the last lpc value
+
+skipmanual:
+namespace Push ;saves current namespace
+if %0 > 1
+{
+ str pos %1 g_ ;consider doing this via two script files...
+ if #strres = 1
+  namespace global %1
+ else
+  namespace local %1
+ if %2 = clear
+ {
+  namespace clear
+  goto finished
+ }
+ set !lpc #lpc
+ set #lpc 1000000
+ if !items = n/a
+  set !items 0
+ if %2 = size
+ {
+  if %0 > 2
+   set % . %3 !items
+  else
+   set #result !items
+  goto finished
+ }
+ if %2 = push
+ {
+  set !items !items + 1
+  if %0 = 3
+   set !item . !items %3
+  else
+   event sysmessage stack.euo - push must have 3 input parameters
+  goto finished
+ }
+ if %2 = get
+ {
+  if %0 > 2
+  {
+   if %3 > !items
+   {
+    event sysmessage stack.euo - get index out of bounds
+    set %3 _ ;return n/a
+   }
+   if %0 > 3
+    set % . %4 !item . %3
+   else
+    set #result !item . %3
+  }
+  else
+   event sysmessage stack.euo - get needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = set
+ {
+  if %0 > 2
+  {
+   if %3 > !items
+   {
+    set !items %3
+    event sysmessage stack.euo - set index out of bounds, stack has been extended
+   }
+   if %0 = 4
+    set !item . %3 %4
+   ;else nothing has been set, probably only enlarged
+  }
+  else
+   event sysmessage stack.euo - set needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = pop
+ {
+  if %0 > 2
+   set % . %3 !item . !items
+  else
+   set #result !item . !items
+  if !items > 0
+   set !items !items - 1
+  else
+   event sysmessage stack.euo - attempting to pop empty stack
+  if !items <= 0 ;stack is empty
+   namespace clear
+  goto finished
+ }
+ if %2 = top
+ {
+  if %0 > 2
+   set % . %3 !item . !items
+  else
+   set #result !item . !items
+  goto finished
+ }
+ if %2 = swap
+ {
+  if %0 = 4
+   gosub Swap %3 %4
+  else
+   event sysmessage stack.euo - swap needs 4 input parameters
+  goto finished
+ }
+ if %2 = copy
+ {
+  if %0 = 3
+  {
+   str pos %3 g_
+   if #strres = 1
+    namespace copy item* to global %3
+   else
+    namespace copy item* to local %3
+  }
+  else
+   event sysmessage stack.euo - copy must have 3 parameters
+  goto finished
+ }
+ event sysmessage stack.euo - unresolved command
+}
+event sysmessage stack.euo - to few input parameters specified
+event sysmessage clear - makes the stack be empty.
+event sysmessage swap - swaps two elements within the stack.
+event sysmessage size - returns the number of elements inside the stack.
+event sysmessage push - push the %3 variable on top of the stack.
+event sysmessage pop - remove and return the top variable from the stack.
+event sysmessage top - show the variable that is on top of the stack.
+event sysmessage get - get value of an item on specified index. (1 is bottom element)
+event sysmessage set - set value on specified index in the stack. Could be used to merely extend the stack (with only three parameters)
+event sysmessage copy - copy specified stack into another stack
+
+finished:
+
+set #lpc !lpc
+namespace Pop ;retrieves previous namespace
+exit
+
+sub Swap ;%1 - first index, %2 - second index
+ set !swaphlp !item . %1
+ set !item . %1 !item . %2
+ set !item . %2 !swaphlp
+ if %1 > !items
+ {
+  event sysmessage stack.euo - swap first index out of bouds, stack has been extended and filled with n/a values to accomodate
+  set !items %1
+ }
+ if %2 > !items
+ {
+  event sysmessage stack.euo - swap first index out of bouds, stack has been extended and filled with n/a values to accomodate
+  set !items %2
+ }
+return
+

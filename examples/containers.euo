@@ -1,0 +1,24 @@
+;Example of stack utility, read the file itself for complete info.
+;The usage of array, map, struct, class, queue, etc. are similair.
+
+ ;Create new instance of stack, called mystack and push value 12
+ ;on top
+ call stack mystack push 12
+
+ ;Push anoher value: 4
+ call stack mystack push 4
+ 
+ ;Copy mystack into another global stack called yourstack
+ ;global stacks could be seen and accessed by other scripts running
+ ;in the same EUO instance
+ call stack mystack copy g_yourstack
+ 
+ ;Retrieve top element from g_yourstack and display it (output: 4).
+ call stack g_yourstack pop
+ display ok #result
+ 
+ ;Again retrieve top element from g_yourstack. This time the top
+ ;element is going to be saved in variable named var (output: 12).
+ call stack g_yourstack pop var
+ display ok %var
+halt

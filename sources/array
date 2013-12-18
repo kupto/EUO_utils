@@ -1,0 +1,246 @@
+goto skipmanual
+;array.euo - simple indexed set of data of fixed length. Each instance of the
+;array resides in separate namespace and has the same underlying structure as
+;stack.euo, therefore single variable could be used by both scripts.
+
+;parameters:
+;%1 - name of the array (underlying namesapce), if the name starts with
+;     "g_", the array will be global (common to all scripts in current EUO
+;     instance).
+;%2 - command to do, defaultly the return variable will be #result.
+;   new - create new array of specified length.
+;   clear - makes the array be empty.
+;   swap - swaps two elements within the array.
+;   size - returns the number of elements inside the array.
+;   get - get value of an item on specified index. (elements are indexed 1 - size)
+;   set - set value on specified index in the array.
+;   copy - copy specified array into another array.
+;   fromfind - reads in order all the #find* data variables into array of size 14.
+;   delimitered - returns all elements concatenated using specified delimiter.
+;TODO:
+;   reset - vynuluje
+;   newdim, getdim, setdim, copydim - prace s hlubsimi dimenzeni, tento array obsahuje jenom pointery na dalsi atd. slouzi k realizaci 2D, 3D... pole
+;%3 - if new is issued, this is the length of the array to be alocated.
+;   - if size is issued, this is the name of the return variable that will be set.
+;   - if swap is issued, this is an index of first element to be swapped.
+;   - if get, set is issued, this is an index of element to be returned.
+;   - if copy is issued, this is name of the new array to be initialized to
+;     same values as is the current one.
+;   - if fromfind is issued and this value is "names", the string representations
+;     of names of * from #find* variables are stored.
+;%4 - if new is issued, %4 - %x are the initial values within array.
+;   - if swap is issued, this is an index of the second element to swap.
+;   - if get is issued, this is the name of the return variable that will be set.
+;   - if set is issued, this is the value to be stored.
+
+;in the case of error (outside of bound operation for example) returns n/a
+;and no operations will be performed
+
+;inner namespace variables:
+;!items - number of elements (size/length)
+;!item# - value of item on specified index
+;!swaphlp - help variable used while item swapping
+;!lpc - holder for the last lpc value
+;TODO:
+;!topdim - kolikata dimenze jsem nad skutecnymi daty 0 - obsahuju uz data ne jen pointery (kontrola pristupu, zabrani prepisovat pointery a menit rozmery...)
+;sub array
+
+skipmanual:
+namespace Push ;saves current namespace
+if %0 > 1
+{
+ str pos %1 g_ ;consider doing this via two script files...
+ if #strres = 1
+  namespace global %1
+ else
+  namespace local %1
+ if %2 = clear
+ {
+  namespace clear
+  goto finished
+ }
+ set !lpc #lpc
+ set #lpc 1000000
+ if !items = n/a
+  set !items 0
+ if %2 = new
+ {
+  if %0 < 3
+  {
+   event sysmessage array.euo - error new must specify length, aborting
+   ;namespace clear
+   goto finished
+  }
+  set %2 4
+  for !items 1 %3
+  {
+   set !item . !items % . %2
+   set %2 %2 + 1
+  }
+  set !items %3
+  goto finished
+ }
+ if %2 = size
+ {
+  if %0 > 2
+   set % . %3 !items
+  else
+   set #result !items
+  goto finished
+ }
+ if %2 = set
+ {
+  if %0 > 2
+  {
+   if %3 > !items || %3 < 1
+    event sysmessage array.euo - set index out of bounds
+   if %0 = 4
+    set !item . %3 %4
+  }
+  else
+   event sysmessage array.euo - set needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = get
+ {
+  if %0 > 2
+  {
+   if ( %3 > !items ) || ( %3 < 1 )
+    event sysmessage array.euo - get index out of bounds
+   if %0 > 3
+    set % . %4 !item . %3
+   else
+    set #result !item . %3
+  }
+  else
+   event sysmessage array.euo - get needs atleast 3 input parameters
+  goto finished
+ }
+ if %2 = swap
+ {
+  if %0 = 4
+   gosub Swap %3 %4
+  else
+   event sysmessage array.euo - swap needs 4 input parameters
+  goto finished
+ }
+ if %2 = copy
+ {
+  if %0 = 3
+  {
+   str pos %3 g_
+   if #strres = 1
+    namespace copy item* to global %3
+   else
+    namespace copy item* to local %3
+  }
+  else
+   event sysmessage array.euo - copy must have 3 parameters
+  goto finished
+ }
+ if %2 = fromfind
+ {
+  if %0 > 2 && %3 = names
+   gosub fromfind names
+  else
+   gosub fromfind
+  goto finished
+ }
+ if %2 = delimitered
+ {
+  if %0 < 3
+  {
+   event sysmessage array.euo - delimitering character must be specified
+   goto finished
+  }
+  if %0 = 4
+   set %2 x
+  gosub getdelimitered %3
+  if %2 = x
+   set % . %4 #result
+  goto finished
+ }
+ event sysmessage array.euo - unresolved command
+}
+event sysmessage array.euo - to few input parameters specified
+event sysmessage clear - makes the array be empty.
+event sysmessage swap - swaps two elements within the array.
+event sysmessage size - returns the number of elements inside the array.
+event sysmessage get - get value of an item on specified index. (1 is bottom element)
+event sysmessage set - set value on specified index in the array. Could be used to merely extend the array (with only three parameters)
+event sysmessage copy - copy specified array into another array
+
+finished:
+
+set #lpc !lpc
+namespace Pop ;retrieves previous namespace
+;return #result
+exit
+
+sub Swap ;%1 - first index, %2 - second index
+ set !swaphlp !item . %1
+ set !item . %1 !item . %2
+ set !item . %2 !swaphlp
+ if %1 > !items
+ {
+  event sysmessage array.euo - swap first index out of bouds
+  set !items %1
+ }
+ if %2 > !items
+ {
+  event sysmessage array.euo - swap first index out of bouds
+  set !items %2
+ }
+return
+
+sub fromfind ;%1 - if names, saves only the names
+ set !items 14
+ if %0 = 1 ;&& %1 = names ;speedup
+ {
+  set !item1  ID
+  set !item2  TYPE
+  set !item3  X
+  set !item4  Y
+  set !item5  Z
+  set !item6  DIST
+  set !item7  KIND
+  set !item8  STACK
+  set !item9  BAGID
+  set !item10 MOD
+  set !item11 REP
+  set !item12 COL
+  set !item13 INDEX
+  set !item14 CNT
+ }
+ else
+ {
+  set !item1  #FINDID
+  set !item2  #FINDTYPE
+  set !item3  #FINDX
+  set !item4  #FINDY
+  set !item5  #FINDZ
+  set !item6  #FINDDIST
+  set !item7  #FINDKIND
+  set !item8  #FINDSTACK
+  set !item9  #FINDBAGID
+  set !item10 #FINDMOD
+  set !item11 #FINDREP
+  set !item12 #FINDCOL
+  set !item13 #FINDINDEX
+  set !item14 #FINDCNT
+ }
+return
+
+sub getdelimitered ;%1 - delimitering character
+ set #result
+ if !items < 2
+  return !item1
+ set !items !items - 1
+ for !swaphlp 1 !items
+ {
+  set #result #result , !item . !swaphlp , %1
+ }
+ set !items !items + 1
+ set #result #result , !item . !items
+return #result
+

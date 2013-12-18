@@ -1,0 +1,13 @@
+;doubleclicks on first target and than clicks on the second reliably
+ wait 10
+ set #lobjectid %1
+ event macro 17
+ target 2s
+ set #ltargetid %2
+ set #ltargetkind 1
+ event macro 22
+ wait 10
+ set #ltargetid %2
+ set #ltargetkind 1
+ event macro 22
+exit

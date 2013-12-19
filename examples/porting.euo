@@ -1,0 +1,21 @@
+;Example usage of useportal.euo script. This script acivates the teleport
+;you are currently standing on and ports you to a destination specified
+;by zero-based button position on the teleporting panel (from top to
+;bottom).
+ set %button_thyris2andor 6
+ set %button_andor2islands 0
+
+ ;Step on the middle of the porting pad in thyrs!
+ 
+ ;Let user know that the script has started
+ event sysmessage Beginning
+ 
+ ;Go from Thyris to Andor
+ call useportal.euo %button_thyris2andor
+
+ ;Go from Andor to the Islands (Tulacke ostrovy)
+ call useportal.euo %button_andor2islands
+
+ ;Notiffy the player that the porting is over
+ event sysmessage Here I am
+halt

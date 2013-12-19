@@ -1,0 +1,54 @@
+;musis stat uprostred portalu
+;%1 - cislo knofliku 0, 1, 2, 3, ...
+set %controlertype AOF
+set %buttonpos %1
+set %stonedcolor 1154
+
+;;; INIT IS OVER
+while #contkind <> GJZ && #contname <> generic_gump
+{
+ finditem %controlertype G_3
+ if #findkind = -1
+ {
+  finditem %controlertype G_30
+ }
+ if #findkind = -1
+ {
+  display ok Nejsi u pozadovaneho portalu$dojdi k nemu
+  pause
+  continue
+ }
+
+ set %clicky #findy + 2
+ ;call walk.euo #findx %clicky
+ 
+ call do.euo #findid
+ wait 20
+}
+
+set %clickx #contposx + 267
+set %clicky #contposy + 40 + %buttonpos * 20
+
+click %clickx %clicky f
+
+set %clickx #charposx
+set %clicky #charposy
+
+ while #charposx = %clickx && #charposy = %clicky
+ {
+  wait 5
+ }
+ if ABS ( #charposx - %clickx ) < 10 && ABS ( #charposy - %clicky ) < 10
+ {
+  event sysmessage Skript pozastaven kvuli pohybu pri portovani, prvne portni tam kam mas a pak jej spust
+  pause
+  exit
+ }
+ while #true
+ {
+  finditem #charid
+  if #findcol <> %stonedcolor
+   break
+ }
+ wait 10
+exit

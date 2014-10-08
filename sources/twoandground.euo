@@ -1,0 +1,15 @@
+; Double-click an item (%1) and target ground (x:%2 y:%3)
+ wait 10
+ set #lobjectid %1
+ event macro 17
+ target 2s
+ set #ltargetx %2
+ set #ltargety %3
+ set #ltargetkind 2
+ event macro 22
+ wait 10
+ set #ltargetx %2
+ set #ltargety %3
+ set #ltargetkind 2
+ event macro 22
+exit

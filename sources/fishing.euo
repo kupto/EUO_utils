@@ -1,0 +1,139 @@
+;fishing on 5x5 bases
+; Adjusted for general public usage via github. You will have to figure the last sub on your own =P
+;After the rework of fishing system, this script only actively pulls out jeseters and pearls...
+
+;Make sure to have paperdoll and status open and fishing rod equiped or inside backpack
+tile init
+set %fishtype YDF_GQD_EQD_FQD_CQD_DQD_XDF_FEV
+set %othertype KUF_ROK_IND_HUF_EUF_ZWF_MVF
+set %poleTYPE KDF
+set %maxattempts 10 ;how many tries on one tile
+set %maxweight #maxweight - 30
+set %knivetype WSF_TSF
+;;init is done
+set %lpc #lpc
+set #lpc 10000
+
+;event macro 8 1 ;open paperdoll
+;event macro 8 2 ;open status
+finditem %poleTYPE C_ , #charid
+if #findkind = -1
+{
+  finditem %poleTYPE C_ , #backpackid
+  if #findkind = -1
+   exit
+}
+set %poleid #findid
+
+if ( %endspot = n/a )
+{
+  display yesno Resetovat ryby?
+  if #dispres = yes
+    set *fishedwater
+  set %endspot 1
+}
+
+;wait 3s
+set %xu ( #charposx + 5 )
+set %xl ( #charposx - 5 )
+set %yu ( #charposy + 5 )
+set %yl ( #charposy - 5 )
+set %sx #charposx
+set %sy #charposy
+
+set %fishedwater *fishedwater
+asdasd:
+for %x %xu %xl
+{
+ for %y %yu %yl
+ {
+
+   tile Cnt %x %y
+   set %tilename
+   for %tile 1 #tilecnt
+   {
+    tile get %x %y %tile
+    set %tilename #tilename , _ , %tilename
+   }
+   if ( ( water in %tilename ) || ( voda in %tilename ) ) && ( wood notin %tilename )
+   {
+      gosub fish %x %y
+      ;wait 1s 20
+   }
+ }
+}
+set #lpc %lpc
+gosub pick
+set *fishedwater %fishedwater
+display ok konec
+pause
+;halt
+exit
+
+sub fish ;%x %y
+set %fished %x , _ , %y
+;event sysmessage f: %fished
+if %fished in %fishedwater
+  return
+
+set %fishedwater %fishedwater , : , %fished
+
+set %attempts 0
+repeatfishing:
+ if %attempts > %maxattempts
+    return
+ set %attempts %attempts + 1
+ wait 10
+ if #weight > %maxweight
+  gosub bankit
+
+ set %jstart #jindex + 1
+ call twoandground.euo %poleid %x %y
+ gosub pick
+
+ set %bailout #scnt + 8 ;pocet sekund maximalne rybaricich
+ while %bailout > #scnt
+ {
+  while #jindex < %jstart && %bailout > #scnt
+        wait 1
+  for %i %jstart #jindex
+  {
+   scanjournal %i
+   if  ryby,_ale in #journal ;nepovedlo
+       goto repeatfishing
+   if  _z_vody_ in #journal ;povedlo
+   {
+      wait 8
+      goto repeatfishing
+   }
+   if ( Tady_nejsou_ in #journal ) || ( _daleko in #journal ) || ( Ryby_se_ in #journal ) || ( unexpected_target_info in #journal ) || ( _na_to_m in #journal ) || ( zkus_chytat_ in #journal ) || ( zkus_ryba in #journal ) ;jina chyba
+      return
+  }
+  set %jstart %i
+ }
+ goto repeatfishing
+
+return
+
+sub pick
+ finditem %fishtype , _ , %othertype G_2
+ if #findkind = -1
+    return
+ for #findindex 1 #findcnt
+ {
+  Exevent Drag #findid 100
+  wait 20
+      
+  Exevent Dropc #backpackid
+  wait 10
+      
+  if #weight > %maxweight
+     gosub bankit
+ }
+return
+
+
+
+sub bankit
+ display ok Vykuchej ryby
+return

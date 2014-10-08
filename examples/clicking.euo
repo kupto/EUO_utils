@@ -1,6 +1,7 @@
 ;Example usage of do.euo and twoandone.euo, these scripts are
 ;shorthand for some laboursome clicking in the game.
  set %scissorstype KAG ;Type of scissors, you should have a pair in backpack
+ set %pickaxetype  NPF ;Type of pickaxe, you should always cary one (Tom Gwawn 2014)
 
  ;Open a backpack by clicking on it (double-click an item)
  call do.euo #backpackid
@@ -16,4 +17,14 @@
  ;dialog should appear (double-click an item and target
  ;another)
  call twoandone.euo #findid #charid
+
+ ;find something to "improve" the surroundings
+ finditem %pickaxetype C_ , #backpackid
+ if #findkind = -1
+   halt
+
+ ;double-click on pickaxe and target ground underneeth
+ ;your feet. You will get most probably warned, that
+ ;this is not the brightest idea.
+ call twoandground.euo #findid #charposx #charposy
 halt
